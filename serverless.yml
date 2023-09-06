@@ -1,0 +1,30 @@
+service: serverless-example
+
+plugins:
+  - serverless-offline
+  - serverless-offline-watcher
+
+provider:
+  name: aws
+  runtime: nodejs14.x
+
+custom:  	
+  serverless-offline-watcher:
+    - path: 
+        - src/**/*.ts
+      command: npm run build; echo "Server ready in http://localhost:3000 🚀";
+      hook:
+        - offline:functionsUpdated
+
+functions:
+  main:
+    handler: dist/main.handler
+    events:
+      - http:
+          path: /
+          method: ANY
+          cors: true
+      - http:
+          path: '/{proxy+}'
+          method: ANY
+          cors: true
