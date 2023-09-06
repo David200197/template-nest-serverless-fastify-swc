@@ -1,22 +1,33 @@
+import { Handler, Context, APIGatewayProxyResult } from 'aws-lambda';
+import { proxy } from 'aws-serverless-fastify';
+import fastify, { FastifyInstance } from 'fastify';
 import { NestFactory } from '@nestjs/core';
-import serverlessExpress from '@vendia/serverless-express';
-import { Callback, Context, Handler } from 'aws-lambda';
+import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
 import { AppModule } from './app.module';
 
-let server: Handler;
-async function bootstrap(): Promise<Handler> {
-  const app = await NestFactory.create(AppModule);
-  await app.init();
+let fastifyServer: FastifyInstance
 
-  const expressApp = app.getHttpAdapter().getInstance();
-  return serverlessExpress({ app: expressApp });
-}
+export async function bootstrap() {
+    const instance = fastify({ logger: true });
+    const nestApp = await NestFactory.create<NestFastifyApplication>(
+        AppModule,
+        new FastifyAdapter(instance),
+    );
 
-export const handler: Handler = async (
-  event: any,
-  context: Context,
-  callback: Callback,
-) => {
-  server = server ?? (await bootstrap());
-  return server(event, context, callback);
+    nestApp.enableCors();
+    await nestApp.init();
+    return instance;
+};
+
+process.on('unhandledRejection', (reason) => {
+    console.error(reason);
+});
+
+process.on('uncaughtException', (reason) => {
+    console.error(reason);
+});
+
+export const handler: Handler = async (event: any, context: Context): Promise<APIGatewayProxyResult> => {
+    if (!fastifyServer) fastifyServer = await bootstrap();
+    return await proxy(fastifyServer, event, context);
 };
