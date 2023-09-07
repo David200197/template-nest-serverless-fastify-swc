@@ -8,9 +8,9 @@ provider:
   name: aws
   runtime: nodejs14.x
 
-custom:  	
+custom:
   serverless-offline-watcher:
-    - path: 
+    - path:
         - src/**/*.ts
       command: npm run build; echo "Server ready in http://localhost:3000 🚀";
       hook:
@@ -25,6 +25,6 @@ functions:
           method: ANY
           cors: true
       - http:
-          path: '/{proxy+}'
+          path: "/{proxy+}"
           method: ANY
           cors: true
